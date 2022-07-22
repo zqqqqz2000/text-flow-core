@@ -1,0 +1,91 @@
+use std::str::FromStr;
+use crate::ast::{Expr, Value};
+use crate::utils::{b};
+
+grammar;
+
+pub Exprs = Breaks<Expr>;
+
+Expr: Box<Expr> = {
+    WithCodePos<Val>,
+    WithCodePos<FuncDef>,
+    WithCodePos<FuncCall>,
+    WithCodePos<Get>,
+    WithCodePos<List>,
+    WithCodePos<Block>,
+    WithCodePos<Variable>
+}
+
+Breaks<T>: Vec<T> = {
+    (<T> ";")*,
+    <mut v: (<T> ";")+> <t: T> => {
+        v.push(t);
+        v
+    },
+    T => vec![<>]
+};
+
+Block: Box<Expr> = {
+    "{" <Exprs> "}" => b(Expr::Block(<>))
+};
+
+WithCodePos<T>: Box<Expr> = {
+    <start:@L> <e:T> <end:@R> => b(Expr::ExprWithCodePos{exp: e, start, end})
+}
+
+FuncCall: Box<Expr> = {
+    <f:Expr> "[" <mut pv:(<Expr> ",")*> <p: Expr?> "]" => {
+        p.map(|x|pv.push(x));
+        b(Expr::FuncCall{func: f, parameters: pv})
+    }
+}
+
+FuncDef: Box<Expr> = {
+    "f" "[" <mut pv:(<Identifier> ",")*> <p: Identifier?> "]" <body: Block> => {
+        p.map(|x|pv.push(x));
+        b(Expr::FuncDef{parameters: pv, body})
+    }
+}
+
+Get: Box<Expr> = {
+    <e:Expr> "." <i:Identifier> => b(Expr::Get{from: e,key: i})
+}
+
+Num64: Value = {
+    r"\d{1,17}" => Value::Int64(i64::from_str(<>).unwrap())
+};
+
+Num128: Value = {
+    r"\d{18,}" => Value::Int128(i128::from_str(<>).unwrap())
+};
+
+Str: Value = {
+    r"'[^']*'" => Value::String(b(String::from(<>))),
+    r#""[^"]*""# => Value::String(b(String::from(<>)))
+}
+
+Regex: Value = {
+    r"/[^/]*/" => Value::Regex(b(String::from(<>)))
+}
+
+List: Box<Expr> = {
+    "[" <mut iv:(<Expr> ",")*> <i:Expr> "]" => {
+        iv.push(i);
+        b(Expr::List(iv))
+    }
+}
+
+Val: Box<Expr> = {
+    Str => b(Expr::Value(<>)),
+    Regex => b(Expr::Value(<>)),
+    Num64 => b(Expr::Value(<>)),
+    Num128 => b(Expr::Value(<>))
+}
+
+Variable: Box<Expr> = {
+    Identifier => b(Expr::Variable(<>))
+}
+
+Identifier: Box<String> = {
+    r"[$_a-zA-Z]+[$_\d\w]*" => b(String::from(<>)),
+}
