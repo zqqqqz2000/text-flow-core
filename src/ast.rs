@@ -7,7 +7,7 @@ pub enum Value {
 }
 
 #[derive(Debug)]
-pub enum Op{
+pub enum Op {
     Eq,
     Map,
     AsyncMap,
@@ -21,25 +21,32 @@ pub enum Op{
     BAnd,
     BOr,
     BXor,
-    BNot
+    BNot,
+}
+
+#[derive(Debug)]
+pub enum Control {
+    Ignore,
+    Break,
 }
 
 #[derive(Debug)]
 pub enum Expr {
-    FuncCall{func: Box<Expr>, parameters: Vec<Box<Expr>>},
+    FuncCall { func: Box<Expr>, parameters: Vec<Box<Expr>> },
     Variable(Box<String>),
-    FuncDef{parameters: Vec<Box<String>>, body: Box<Expr>},
+    FuncDef { parameters: Vec<Box<String>>, body: Box<Expr> },
     Value(Value),
     // [a, b, c]
     List(Vec<Box<Expr>>),
     // abc.xyz
-    Get{from: Box<Expr>, key: Box<String>},
+    Get { from: Box<Expr>, key: Box<String> },
     ExprWithCodePos { exp: Box<Expr>, start: usize, end: usize },
     Block(Vec<Box<Expr>>),
     // !x
-    Op1{op: Op, x: Box<Expr>},
+    Op1 { op: Op, x: Box<Expr> },
     // x || y
-    Op2{op: Op, x: Box<Expr>, y: Box<Expr>},
+    Op2 { op: Op, x: Box<Expr>, y: Box<Expr> },
     // x ? y : z
-    Op3{op: Op, x: Box<Expr>, y: Box<Expr>, z: Box<Expr>},
+    Op3 { op: Op, x: Box<Expr>, y: Box<Expr>, z: Box<Expr> },
+    Control(Control),
 }

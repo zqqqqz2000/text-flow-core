@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Expr, Value, Op};
+use crate::ast::{Expr, Value, Op, Control};
 use crate::utils::{b};
 
 grammar;
@@ -15,7 +15,7 @@ PriorityExpr: Box<Expr> = {
     WithCodePos<Get>,
     WithCodePos<List>,
     WithCodePos<Block>,
-    WithCodePos<Variable>,
+    WithCodePos<VariableAndControl>,
 }
 
 Term<T>: T = {
@@ -89,8 +89,14 @@ Value: Box<Expr> = {
     Num128 => b(Expr::Value(<>))
 }
 
-Variable: Box<Expr> = {
-    Identifier => b(Expr::Variable(<>))
+VariableAndControl: Box<Expr> = {
+    Identifier => {
+        match <>.as_str() {
+            "ignore" => b(Expr::Control(Control::Ignore)),
+            "break" => b(Expr::Control(Control::Break)),
+            _ => b(Expr::Variable(<>))
+        }
+    }
 }
 
 Identifier: Box<String> = {
