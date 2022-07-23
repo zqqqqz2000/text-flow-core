@@ -1,13 +1,45 @@
-pub mod ast {
-    pub enum Expr {
-        Number(i32),
-        Op(Box<Expr>, Opcode, Box<Expr>),
-    }
+#[derive(Debug)]
+pub enum Value {
+    String(Box<String>),
+    Int64(i64),
+    Int128(i128),
+    Regex(Box<String>),
+}
 
-    pub enum Opcode {
-        Mul,
-        Div,
-        Add,
-        Sub,
-    }
+#[derive(Debug)]
+pub enum Op{
+    Eq,
+    Map,
+    AsyncMap,
+    Assign,
+    Collect,
+    Add,
+    If,
+    And,
+    Or,
+    Not,
+    BAnd,
+    BOr,
+    BXor,
+    BNot
+}
+
+#[derive(Debug)]
+pub enum Expr {
+    FuncCall{func: Box<Expr>, parameters: Vec<Box<Expr>>},
+    Variable(Box<String>),
+    FuncDef{parameters: Vec<Box<String>>, body: Box<Expr>},
+    Value(Value),
+    // [a, b, c]
+    List(Vec<Box<Expr>>),
+    // abc.xyz
+    Get{from: Box<Expr>, key: Box<String>},
+    ExprWithCodePos { exp: Box<Expr>, start: usize, end: usize },
+    Block(Vec<Box<Expr>>),
+    // !x
+    Op1{op: Op, x: Box<Expr>},
+    // x || y
+    Op2{op: Op, x: Box<Expr>, y: Box<Expr>},
+    // x ? y : z
+    Op3{op: Op, x: Box<Expr>, y: Box<Expr>, z: Box<Expr>},
 }

@@ -1,19 +1,26 @@
 use std::str::FromStr;
-use crate::ast::{Expr, Value};
+use crate::ast::{Expr, Value, Op};
 use crate::utils::{b};
 
 grammar;
 
 pub Exprs = Breaks<Expr>;
 
-Expr: Box<Expr> = {
-    WithCodePos<Val>,
+Expr = WithCodePos<Operation>;
+
+PriorityExpr: Box<Expr> = {
+    WithCodePos<Value>,
     WithCodePos<FuncDef>,
     WithCodePos<FuncCall>,
     WithCodePos<Get>,
     WithCodePos<List>,
     WithCodePos<Block>,
-    WithCodePos<Variable>
+    WithCodePos<Variable>,
+}
+
+Term<T>: T = {
+    "(" <T> ")",
+    T
 }
 
 Breaks<T>: Vec<T> = {
@@ -34,7 +41,7 @@ WithCodePos<T>: Box<Expr> = {
 }
 
 FuncCall: Box<Expr> = {
-    <f:Expr> "[" <mut pv:(<Expr> ",")*> <p: Expr?> "]" => {
+    <f:PriorityExpr> "[" <mut pv:(<Expr> ",")*> <p: Expr?> "]" => {
         p.map(|x|pv.push(x));
         b(Expr::FuncCall{func: f, parameters: pv})
     }
@@ -48,7 +55,7 @@ FuncDef: Box<Expr> = {
 }
 
 Get: Box<Expr> = {
-    <e:Expr> "." <i:Identifier> => b(Expr::Get{from: e,key: i})
+    <e:PriorityExpr> "." <i:Identifier> => b(Expr::Get{from: e,key: i})
 }
 
 Num64: Value = {
@@ -75,7 +82,7 @@ List: Box<Expr> = {
     }
 }
 
-Val: Box<Expr> = {
+Value: Box<Expr> = {
     Str => b(Expr::Value(<>)),
     Regex => b(Expr::Value(<>)),
     Num64 => b(Expr::Value(<>)),
@@ -88,4 +95,28 @@ Variable: Box<Expr> = {
 
 Identifier: Box<String> = {
     r"[$_a-zA-Z]+[$_\d\w]*" => b(String::from(<>)),
+}
+
+Operation: Box<Expr> = {
+    <op: Op1> <e: PriorityExpr> => b(Expr::Op1{op, x: e}),
+    <x: Operation> <op: Op2> <y: PriorityExpr> => b(Expr::Op2{op, x, y}),
+    PriorityExpr
+}
+
+Op1: Op = {
+    "!" => Op::Not,
+    "~" => Op::BNot
+}
+
+Op2: Op = {
+    "+" => Op::Add,
+    ">" => Op::Map,
+    ">|" => Op::AsyncMap,
+    "==" => Op::Eq,
+    "<" => Op::Collect,
+    "=" => Op::Assign,
+    "&&" => Op::And,
+    "||" => Op::Or,
+    "|" => Op::BOr,
+    "&" => Op::BAnd
 }
