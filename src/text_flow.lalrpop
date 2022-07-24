@@ -105,8 +105,18 @@ Identifier: Box<String> = {
 
 Operation: Box<Expr> = {
     <op: Op1> <e: PriorityExpr> => b(Expr::Op1{op, x: e}),
-    <x: Operation> <op: Op2> <y: PriorityExpr> => b(Expr::Op2{op, x, y}),
-    PriorityExpr
+    <x: Operation> <op: Op2> <y: PriorityOperation> => b(Expr::Op2{op, x, y}),
+    PriorityOperation
+}
+
+PriorityOperation: Box<Expr> = {
+    <x: PriorityOperation> <op: PriorityOp2> <y: PPriorityOperation> => b(Expr::Op2{op, x, y}),
+    PPriorityOperation
+}
+
+PPriorityOperation: Box<Expr> = {
+     PriorityExpr,
+     <x: PPriorityOperation> <op: PPriorityOp2> <y: PriorityExpr> => b(Expr::Op2{op, x, y}),
 }
 
 Op1: Op = {
@@ -115,19 +125,25 @@ Op1: Op = {
 }
 
 Op2: Op = {
-    "+" => Op::Add,
-    ">-" => Op::Collect,
-    ">" => Op::Gt,
-    ">=" => Op::Ge,
-    ">>-" => Op::AsyncMap,
     "==" => Op::Eq,
-    "-<" => Op::Map,
-    "<" => Op::Lt,
-    "<=" => Op::Le,
     "!=" => Op::Ne,
     "=" => Op::Assign,
     "&&" => Op::And,
     "||" => Op::Or,
     "|" => Op::BOr,
     "&" => Op::BAnd
+}
+
+PriorityOp2: Op = {
+    ">" => Op::Gt,
+    ">=" => Op::Ge,
+    "<" => Op::Lt,
+    "<=" => Op::Le,
+}
+
+PPriorityOp2: Op = {
+    "+" => Op::Add,
+    "-<" => Op::Map,
+    ">-" => Op::Collect,
+    ">>-" => Op::AsyncMap,
 }
