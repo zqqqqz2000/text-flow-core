@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Value {
     String(Box<String>),
     Int64(i64),
@@ -6,7 +6,7 @@ pub enum Value {
     Regex(Box<String>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Op {
     Eq,
     Map,
@@ -14,6 +14,11 @@ pub enum Op {
     Assign,
     Collect,
     Add,
+    Gt,
+    Ge,
+    Lt,
+    Le,
+    Ne,
     If,
     And,
     Or,
@@ -24,13 +29,13 @@ pub enum Op {
     BNot,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Control {
     Ignore,
     Break,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Expr {
     FuncCall { func: Box<Expr>, parameters: Vec<Box<Expr>> },
     Variable(Box<String>),

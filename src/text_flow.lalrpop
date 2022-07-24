@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use crate::ast::{Expr, Value, Op, Control};
-use crate::utils::{b};
+use crate::utils::{b, slice_end_str};
 
 grammar;
 
@@ -67,12 +67,12 @@ Num128: Value = {
 };
 
 Str: Value = {
-    r"'[^']*'" => Value::String(b(String::from(<>))),
-    r#""[^"]*""# => Value::String(b(String::from(<>)))
+    r"'[^']*'" => Value::String(b(slice_end_str(String::from(<>), 1, 1))),
+    r#""[^"]*""# => Value::String(b(slice_end_str(String::from(<>), 1, 1)))
 }
 
 Regex: Value = {
-    r"/[^/]*/" => Value::Regex(b(String::from(<>)))
+    r"/[^/]*/" => Value::Regex(b(slice_end_str(String::from(<>), 1, 1)))
 }
 
 List: Box<Expr> = {
@@ -116,10 +116,15 @@ Op1: Op = {
 
 Op2: Op = {
     "+" => Op::Add,
-    ">" => Op::Map,
-    ">|" => Op::AsyncMap,
+    ">-" => Op::Collect,
+    ">" => Op::Gt,
+    ">=" => Op::Ge,
+    ">>-" => Op::AsyncMap,
     "==" => Op::Eq,
-    "<" => Op::Collect,
+    "-<" => Op::Map,
+    "<" => Op::Lt,
+    "<=" => Op::Le,
+    "!=" => Op::Ne,
     "=" => Op::Assign,
     "&&" => Op::And,
     "||" => Op::Or,
