@@ -32,25 +32,25 @@ Block: Box<Expr> = {
 };
 
 WithCodePos<T>: Box<Expr> = {
-    <start:@L> <e:T> <end:@R> => b(Expr::ExprWithCodePos{exp: e, start, end})
+    <start: @L> <e: T> <end: @R> => b(Expr::ExprWithCodePos{exp: e, start, end})
 }
 
 FuncCall: Box<Expr> = {
-    <f:PriorityExpr> "[" <mut pv:(<Expr> ",")*> <p: Expr?> "]" => {
+    <f: PriorityExpr> "[" <mut pv: (<Expr> ",")*> <p: Expr?> "]" => {
         p.map(|x|pv.push(x));
         b(Expr::FuncCall{func: f, parameters: pv})
     }
 }
 
 FuncDef: Box<Expr> = {
-    "f" "[" <mut pv:(<Identifier> ",")*> <p: Identifier?> "]" <body: Block> => {
+    "f" "[" <mut pv: (<Identifier> ",")*> <p: Identifier?> "]" <body: Block> => {
         p.map(|x|pv.push(x));
         b(Expr::FuncDef{parameters: pv, body})
     }
 }
 
 Get: Box<Expr> = {
-    <e:PriorityExpr> "." <i:Identifier> => b(Expr::Get{from: e,key: i})
+    <e: PriorityExpr> "." <i: Identifier> => b(Expr::Get{from: e,key: i})
 }
 
 Num64: Value = {
@@ -71,7 +71,7 @@ Regex: Value = {
 }
 
 List: Box<Expr> = {
-    "[" <mut iv:(<Expr> ",")*> <i:Expr> "]" => {
+    "[" <mut iv: (<Expr> ",")*> <i: Expr> "]" => {
         iv.push(i);
         b(Expr::List(iv))
     }
@@ -110,8 +110,13 @@ PriorityOperation: Box<Expr> = {
 }
 
 PPriorityOperation: Box<Expr> = {
+     <x: PPriorityOperation> <op: PPriorityOp2> <y: PPPriorityOperation> => b(Expr::Op2{op, x, y}),
+     PPPriorityOperation
+}
+
+PPPriorityOperation: Box<Expr> = {
      Term,
-     <x: PPriorityOperation> <op: PPriorityOp2> <y: Term> => b(Expr::Op2{op, x, y}),
+     <x: PPPriorityOperation> <op: PPPriorityOp2> <y: Term> => b(Expr::Op2{op, x, y}),
 }
 
 Op1: Op = {
@@ -138,9 +143,15 @@ PriorityOp2: Op = {
 
 PPriorityOp2: Op = {
     "+" => Op::Add,
+    "-" => Op::Sub,
     "-<" => Op::Map,
     ">-" => Op::Collect,
-    ">>-" => Op::AsyncMap,
+    ">>-" => Op::AsyncMap
+}
+
+PPPriorityOp2: Op = {
+    "*" => Op::Mul,
+    "/" => Op::Div
 }
 
 Term: Box<Expr> = {
