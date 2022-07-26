@@ -18,11 +18,6 @@ PriorityExpr: Box<Expr> = {
     WithCodePos<VariableAndControl>,
 }
 
-Term<T>: T = {
-    "(" <T> ")",
-    T
-}
-
 Breaks<T>: Vec<T> = {
     (<T> ";")*,
     <mut v: (<T> ";")+> <t: T> => {
@@ -115,8 +110,8 @@ PriorityOperation: Box<Expr> = {
 }
 
 PPriorityOperation: Box<Expr> = {
-     PriorityExpr,
-     <x: PPriorityOperation> <op: PPriorityOp2> <y: PriorityExpr> => b(Expr::Op2{op, x, y}),
+     Term,
+     <x: PPriorityOperation> <op: PPriorityOp2> <y: Term> => b(Expr::Op2{op, x, y}),
 }
 
 Op1: Op = {
@@ -146,4 +141,9 @@ PPriorityOp2: Op = {
     "-<" => Op::Map,
     ">-" => Op::Collect,
     ">>-" => Op::AsyncMap,
+}
+
+Term: Box<Expr> = {
+    "(" <t: Operation> ")" => t,
+    PriorityExpr
 }
