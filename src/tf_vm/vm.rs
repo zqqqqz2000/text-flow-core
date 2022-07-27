@@ -50,6 +50,74 @@ impl VM {
                         };
                         b(RuntimeTypes::None)
                     }
+                    Op::Add => {
+                        let x = self.eval(Arc::clone(&env), vec![x]);
+                        let y = self.eval(Arc::clone(&env), vec![y]);
+                        match *x {
+                            RuntimeTypes::Int64(x) => match *y {
+                                RuntimeTypes::Int64(y) => b(RuntimeTypes::Int64(x + y)),
+                                RuntimeTypes::Int128(y) => b(RuntimeTypes::Int128(i128::from(x) + y)),
+                                _ => panic!("add not impl")
+                            },
+                            RuntimeTypes::Int128(x) => match *y {
+                                RuntimeTypes::Int64(y) => b(RuntimeTypes::Int128(x + i128::from(y))),
+                                RuntimeTypes::Int128(y) => b(RuntimeTypes::Int128(x + y)),
+                                _ => panic!("add not impl")
+                            },
+                            _ => panic!("add not impl")
+                        }
+                    },
+                    Op::Sub => {
+                        let x = self.eval(Arc::clone(&env), vec![x]);
+                        let y = self.eval(Arc::clone(&env), vec![y]);
+                        match *x {
+                            RuntimeTypes::Int64(x) => match *y {
+                                RuntimeTypes::Int64(y) => b(RuntimeTypes::Int64(x - y)),
+                                RuntimeTypes::Int128(y) => b(RuntimeTypes::Int128(i128::from(x) - y)),
+                                _ => panic!("add not impl")
+                            },
+                            RuntimeTypes::Int128(x) => match *y {
+                                RuntimeTypes::Int64(y) => b(RuntimeTypes::Int128(x - i128::from(y))),
+                                RuntimeTypes::Int128(y) => b(RuntimeTypes::Int128(x - y)),
+                                _ => panic!("add not impl")
+                            },
+                            _ => panic!("add not impl")
+                        }
+                    },
+                    Op::Mul => {
+                        let x = self.eval(Arc::clone(&env), vec![x]);
+                        let y = self.eval(Arc::clone(&env), vec![y]);
+                        match *x {
+                            RuntimeTypes::Int64(x) => match *y {
+                                RuntimeTypes::Int64(y) => b(RuntimeTypes::Int64(x * y)),
+                                RuntimeTypes::Int128(y) => b(RuntimeTypes::Int128(i128::from(x) * y)),
+                                _ => panic!("add not impl")
+                            },
+                            RuntimeTypes::Int128(x) => match *y {
+                                RuntimeTypes::Int64(y) => b(RuntimeTypes::Int128(x * i128::from(y))),
+                                RuntimeTypes::Int128(y) => b(RuntimeTypes::Int128(x * y)),
+                                _ => panic!("add not impl")
+                            },
+                            _ => panic!("add not impl")
+                        }
+                    },
+                    Op::Div => {
+                        let x = self.eval(Arc::clone(&env), vec![x]);
+                        let y = self.eval(Arc::clone(&env), vec![y]);
+                        match *x {
+                            RuntimeTypes::Int64(x) => match *y {
+                                RuntimeTypes::Int64(y) => b(RuntimeTypes::Int64(x / y)),
+                                RuntimeTypes::Int128(y) => b(RuntimeTypes::Int128(i128::from(x) / y)),
+                                _ => panic!("add not impl")
+                            },
+                            RuntimeTypes::Int128(x) => match *y {
+                                RuntimeTypes::Int64(y) => b(RuntimeTypes::Int128(x / i128::from(y))),
+                                RuntimeTypes::Int128(y) => b(RuntimeTypes::Int128(x / y)),
+                                _ => panic!("add not impl")
+                            },
+                            _ => panic!("add not impl")
+                        }
+                    },
                     _ => panic!("2op not impl")
                 }
                 _ => panic!("not impl")
