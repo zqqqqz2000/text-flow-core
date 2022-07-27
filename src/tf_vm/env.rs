@@ -26,7 +26,9 @@ impl Env {
     }
 
     pub fn get(&self, key: String) -> Option<RuntimeTypes> {
-        self.variables.get(key.as_str()).map(|i|i.clone())
+        self.variables.get(key.as_str()).map(|i|i.clone()).
+            or_else(||self.parent.as_ref().map(|env|env.get(key.to_string())).unwrap_or(None)).
+            or_else(||self.global.as_ref().map(|env|env.get(key)).unwrap_or(None))
     }
 
     pub fn set(&mut self, key: String, value: RuntimeTypes) {

@@ -1,5 +1,5 @@
-use std::borrow::{Borrow, BorrowMut};
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::borrow::{Borrow};
+use std::sync::{Arc, RwLock};
 use crate::ast::{Value, Op};
 use crate::Expr;
 use crate::tf_vm::env::{Env, RuntimeTypes};
@@ -18,7 +18,7 @@ impl VM {
         let mut last = b(RuntimeTypes::None);
         for ast in asts {
             last = match *ast {
-                Expr::ExprWithCodePos { exp, start, end } => self.eval(Arc::clone(&env), vec![exp]),
+                Expr::ExprWithCodePos { exp, start: _, end: _ } => self.eval(Arc::clone(&env), vec![exp]),
                 Expr::List(list) => b(RuntimeTypes::List(
                     list.into_iter().map(|i| self.eval(Arc::clone(&env), vec![i])).collect()
                 )),
@@ -29,8 +29,6 @@ impl VM {
                     Value::Regex(regex) => b(RuntimeTypes::Regex(regex)),
                 },
                 Expr::Variable(name) => {
-                    // let env = Arc::clone(&env);
-                    // let r_env = env.read().unwrap();
                     let env = Arc::clone(&env);
                     let r_env = env.read().unwrap();
                     let name = *name;
@@ -44,7 +42,7 @@ impl VM {
                         let mut w_env = env.write().unwrap();
                         match *x {
                             Expr::Variable(name) => w_env.set(*name, *y),
-                            Expr::ExprWithCodePos { exp, start, end } => match *exp {
+                            Expr::ExprWithCodePos { exp, start: _, end: _ } => match *exp {
                                 Expr::Variable(name) => w_env.set(*name, *y),
                                 _ => panic!("assign not impl")
                             },
