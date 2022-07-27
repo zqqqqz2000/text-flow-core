@@ -18,6 +18,6 @@ fn main() {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     let ast: Result<Vec<Box<Expr>>, _> = parser.parse(input.as_str());
-    let global = Arc::new(RwLock::new(Env::new(None, None)));
+    let global = Arc::new(RwLock::new(Env::new(None)));
     println!("{:#?}", vm.eval(global, ast.unwrap()))
 }

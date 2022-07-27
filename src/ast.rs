@@ -1,4 +1,4 @@
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Value {
     String(Box<String>),
     Int64(i64),
@@ -6,7 +6,7 @@ pub enum Value {
     Regex(Box<String>),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Op {
     Eq,
     Map,
@@ -32,13 +32,13 @@ pub enum Op {
     BNot,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Control {
     Ignore,
     Break,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Expr {
     FuncCall { func: Box<Expr>, parameters: Vec<Box<Expr>> },
     Variable(Box<String>),

@@ -228,7 +228,7 @@ mod tests {
                             }),
                             y: b(ExprWithCodePos {
                                 exp: b(FuncCall {
-                                    func: b(ExprWithCodePos {
+                                    body: b(ExprWithCodePos {
                                         exp: b(Variable(b("b".to_string()))),
                                         start: 2,
                                         end: 3

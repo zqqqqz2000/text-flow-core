@@ -1,12 +1,15 @@
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+use crate::Expr;
+use derivative::Derivative;
 
 pub struct Env {
-    parent: Option<Box<Env>>,
-    global: Option<Box<Env>>,
-    variables: HashMap<String, RuntimeTypes>
+    parent: Option<Arc<RwLock<Env>>>,
+    variables: HashMap<String, RuntimeTypes>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Derivative)]
+#[derivative(Debug, Clone)]
 pub enum RuntimeTypes {
     Int64(i64),
     Int128(i128),
@@ -14,21 +17,25 @@ pub enum RuntimeTypes {
     Regex(Box<String>),
     List(Vec<Box<RuntimeTypes>>),
     None,
+    FuncDef {
+        parameters: Vec<Box<String>>,
+        body: Box<Expr>,
+        #[derivative(Debug = "ignore")]
+        env: Arc<RwLock<Env>>,
+    },
 }
 
 impl Env {
-    pub fn new(global: Option<Box<Env>>, parent: Option<Box<Env>>) -> Env {
+    pub fn new(parent: Option<Arc<RwLock<Env>>>) -> Env {
         Env {
             parent,
-            global,
-            variables: HashMap::new()
+            variables: HashMap::new(),
         }
     }
 
     pub fn get(&self, key: String) -> Option<RuntimeTypes> {
-        self.variables.get(key.as_str()).map(|i|i.clone()).
-            or_else(||self.parent.as_ref().map(|env|env.get(key.to_string())).unwrap_or(None)).
-            or_else(||self.global.as_ref().map(|env|env.get(key)).unwrap_or(None))
+        self.variables.get(key.as_str()).map(|i| (*i).clone()).
+            or_else(|| self.parent.as_ref().map(|env| env.read().unwrap().get(key)).unwrap_or(None))
     }
 
     pub fn set(&mut self, key: String, value: RuntimeTypes) {
