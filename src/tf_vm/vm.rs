@@ -70,6 +70,10 @@ impl VM {
                                 RuntimeTypes::Int128(y) => b(RuntimeTypes::Int128(x + y)),
                                 _ => panic!("{x:?} + {y:?} not impl")
                             },
+                            RuntimeTypes::String(x) => match *y {
+                                RuntimeTypes::String(y) => b(RuntimeTypes::String(b(*x + y.as_str()))),
+                                _ => panic!("{x:?} + {y:?} not impl")
+                            }
                             _ => panic!("{x:?} + {y:?} not impl")
                         }
                     }
