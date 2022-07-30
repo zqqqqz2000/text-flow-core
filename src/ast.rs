@@ -40,14 +40,14 @@ pub enum Control {
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Expr {
-    FuncCall { func: Box<Expr>, parameters: Vec<Box<Expr>> },
+    FuncCall { func: Box<Expr>, arguments: Vec<Box<Expr>> },
     Variable(Box<String>),
     FuncDef { parameters: Vec<Box<String>>, body: Box<Expr> },
     Value(Value),
     // [a, b, c]
     List(Vec<Box<Expr>>),
     // abc.xyz
-    Get { from: Box<Expr>, key: Box<String> },
+    Get { from: Box<Expr>, key: Box<Expr> },
     ExprWithCodePos { exp: Box<Expr>, start: usize, end: usize },
     Block(Vec<Box<Expr>>),
     // !x

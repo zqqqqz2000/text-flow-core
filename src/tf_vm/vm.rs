@@ -135,9 +135,9 @@ impl VM {
                     body,
                     env: Arc::new(RwLock::new(Env::new(Some(Arc::clone(&env))))),
                 }),
-                Expr::FuncCall { func, parameters: real_parameters } => {
+                Expr::FuncCall { func, arguments } => {
                     let func_def = self.eval(Arc::clone(&env), vec![func]);
-                    let (formal_parameters, func_body, func_env) = match *func_def {
+                    let (parameters, func_body, func_env) = match *func_def {
                         RuntimeTypes::FuncDef {
                             parameters,
                             body,
@@ -145,15 +145,15 @@ impl VM {
                         } => (parameters, body, env),
                         _ => panic!("can't call {func_def:?}, it's not a function")
                     };
-                    real_parameters.into_iter().enumerate().for_each(|(i, real_parameter)| match *self.remove_code_pos(real_parameter.clone()) {
+                    arguments.into_iter().enumerate().for_each(|(i, arguments)| match *self.remove_code_pos(arguments.clone()) {
                         Expr::Op2 { op, x, y } => match op {
                             Op::Assign => match *self.remove_code_pos(x) {
                                 Expr::Variable(variable) => func_env.write().unwrap().set(*variable, *self.eval(Arc::clone(&env), vec![y])),
                                 _ => panic!("Assign can't be here")
                             },
-                            _ => func_env.write().unwrap().set(*formal_parameters[i].clone(), *self.eval(Arc::clone(&env), vec![real_parameter])),
+                            _ => func_env.write().unwrap().set(*parameters[i].clone(), *self.eval(Arc::clone(&env), vec![arguments])),
                         },
-                        _ => func_env.write().unwrap().set(*formal_parameters[i].clone(), *self.eval(Arc::clone(&env), vec![real_parameter])),
+                        _ => func_env.write().unwrap().set(*parameters[i].clone(), *self.eval(Arc::clone(&env), vec![arguments])),
                     });
                     self.eval(func_env, vec![func_body])
                 }

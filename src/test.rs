@@ -207,7 +207,7 @@ mod tests {
                                 start: 0,
                                 end: 1
                             }),
-                            key: b("b".to_string())
+                            key: b(Variable(b("b".to_string())))
                         }),
                         start: 0,
                         end: 3
@@ -228,12 +228,12 @@ mod tests {
                             }),
                             y: b(ExprWithCodePos {
                                 exp: b(FuncCall {
-                                    body: b(ExprWithCodePos {
+                                    func: b(ExprWithCodePos {
                                         exp: b(Variable(b("b".to_string()))),
                                         start: 2,
                                         end: 3
                                     }),
-                                    parameters: vec![]
+                                    arguments: vec![]
                                 }),
                                 start: 2,
                                 end: 5

@@ -33,6 +33,13 @@ impl Env {
         }
     }
 
+    pub fn empty() -> Env {
+        Env {
+            parent: None,
+            variables: HashMap::new(),
+        }
+    }
+
     pub fn get(&self, key: String) -> Option<RuntimeTypes> {
         self.variables.get(key.as_str()).map(|i| (*i).clone()).
             or_else(|| self.parent.as_ref().map(|env| env.read().unwrap().get(key)).unwrap_or(None))

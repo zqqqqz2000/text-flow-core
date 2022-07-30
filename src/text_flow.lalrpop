@@ -38,7 +38,7 @@ WithCodePos<T>: Box<Expr> = {
 FuncCall: Box<Expr> = {
     <f: PriorityExpr> "[" <mut pv: (<Expr> ",")*> <p: Expr?> "]" => {
         p.map(|x|pv.push(x));
-        b(Expr::FuncCall{func: f, parameters: pv})
+        b(Expr::FuncCall{func: f, arguments: pv})
     }
 }
 
@@ -50,7 +50,11 @@ FuncDef: Box<Expr> = {
 }
 
 Get: Box<Expr> = {
-    <e: PriorityExpr> "." <i: Identifier> => b(Expr::Get{from: e,key: i})
+    <e: PriorityExpr> "." <i: VariableAndControl> => b(Expr::Get{from: e,key: i}),
+    <e: PriorityExpr> "." <s: Str> => b(Expr::Get{from: e,key: b(Expr::Value(s))}),
+    <e: PriorityExpr> "." <n: Num64> => b(Expr::Get{from: e,key: b(Expr::Value(n))}),
+    <e: PriorityExpr> "." <n: Num128> => b(Expr::Get{from: e,key: b(Expr::Value(n))}),
+    <e: PriorityExpr> "." "(" <t: Term> ")" => b(Expr::Get{from: e,key: t})
 }
 
 Num64: Value = {
