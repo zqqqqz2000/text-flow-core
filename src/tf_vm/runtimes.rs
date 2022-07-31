@@ -106,7 +106,8 @@ fn get_value_type_name(t: &RuntimeValue) -> String {
 }
 
 fn get_type_env(env: RwLockReadGuard<Env>, value: &RuntimeValue) -> Arc<RwLock<Env>> {
-    match env.get(get_value_type_name(value)).unwrap() {
+    let type_name = get_value_type_name(value);
+    match env.get(type_name.clone()).unwrap_or_else(||panic!("name '{type_name:?}' is not defined")) {
         RuntimeValue::RuntimeType(t) => t.get_env(),
         _ => panic!("value is not runtimeType, is")
     }

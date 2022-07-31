@@ -13,7 +13,15 @@ fn get_self_from_env(env: Arc<RwLock<Env>>) -> RuntimeValue {
 }
 
 pub fn init_builtin() -> Arc<RwLock<Env>> {
-    Env::from(HashMap::from([
+    let env = Env::empty();
+    let gen_get_type = ||("type".to_string(), RuntimeValue::FuncDef {
+        parameters: vec![b("self".to_string())],
+        body: BuiltinOrExpr::Builtin(|env| {
+            RuntimeValue::String(b(get_self_from_env(env.clone()).get_type(env).name()))
+        }),
+        env: env.clone(),
+    });
+    env.write().unwrap().update_variables(HashMap::from([
         ("i64".to_string(), RuntimeValue::RuntimeType(
             RuntimeType::Int64 {
                 env: Env::from(HashMap::from([
@@ -23,8 +31,9 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                             RuntimeValue::Int64(i) => RuntimeValue::String(b(i.to_string())),
                             _ => panic!("internal error, should only be i64")
                         }),
-                        env: Env::empty(),
+                        env: env.clone(),
                     }),
+                    gen_get_type()
                 ]), None)
             }
         )),
@@ -37,10 +46,12 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                             RuntimeValue::Int128(i) => RuntimeValue::String(b(i.to_string())),
                             _ => panic!("internal error, should only be i128")
                         }),
-                        env: Env::empty(),
+                        env: env.clone(),
                     }),
+                    gen_get_type()
                 ]), None)
             }
         ))
-    ]), None)
+    ]));
+    env
 }

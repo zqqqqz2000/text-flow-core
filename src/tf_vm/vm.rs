@@ -159,11 +159,11 @@ impl VM {
                             Expr::Variable(v) => {
                                 let value = t.get_env().read().unwrap().get(*v).unwrap();
                                 match &value {
-                                    RuntimeValue::FuncDef { parameters: _, body: _, env: _ } => b({
+                                    RuntimeValue::FuncDef { parameters: _, body: _, env } => b({
                                         RuntimeValue::WithEnv {
                                             env: Env::from(HashMap::from([
                                                 ("self".to_string(), *from)
-                                            ]), None),
+                                            ]), Some(env.clone())),
                                             value: b(value),
                                         }
                                     }),
@@ -187,8 +187,8 @@ impl VM {
                             value,
                             env: sub_env
                         } => match *value {
-                            RuntimeValue::FuncDef { parameters, body, env } => {
-                                (parameters, body, env.read().unwrap().merge(sub_env))
+                            RuntimeValue::FuncDef { parameters, body, env: _ } => {
+                                (parameters, body, sub_env)
                             }
                             _ => panic!("can't call {value:?}, it's not a function")
                         },

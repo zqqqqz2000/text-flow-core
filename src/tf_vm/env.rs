@@ -29,6 +29,10 @@ impl Env {
         arc_lock_self
     }
 
+    pub fn update_variables(&mut self, variables: HashMap<String, RuntimeValue>) {
+        self.variables = variables;
+    }
+
     pub fn empty() -> Arc<RwLock<Env>> {
         Env::new(None)
     }
@@ -40,11 +44,5 @@ impl Env {
 
     pub fn set(&mut self, key: String, value: RuntimeValue) {
         self.variables.insert(key, value);
-    }
-
-    pub fn merge(&self, env: Arc<RwLock<Env>>) -> Arc<RwLock<Env>> {
-        let r_guard_env = env.read().unwrap();
-        assert!(r_guard_env.parent.is_none(), "merged Env's parent should be None");
-        Env::from(HashMap::clone(&r_guard_env.variables), self.arc_lock_self.clone())
     }
 }
