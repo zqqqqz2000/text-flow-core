@@ -207,7 +207,8 @@ mod tests {
                                 start: 0,
                                 end: 1
                             }),
-                            key: b(Variable(b("b".to_string())))
+                            key: b(Variable(b("b".to_string()))),
+                            is_expr: false
                         }),
                         start: 0,
                         end: 3
