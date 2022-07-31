@@ -14,7 +14,7 @@ fn get_self_from_env(env: Arc<RwLock<Env>>) -> RuntimeValue {
 
 pub fn init_builtin() -> Arc<RwLock<Env>> {
     let env = Env::empty();
-    let gen_get_type = ||("type".to_string(), RuntimeValue::FuncDef {
+    let gen_get_type = || ("type".to_string(), RuntimeValue::FuncDef {
         parameters: vec![b("self".to_string())],
         body: BuiltinOrExpr::Builtin(|env| {
             RuntimeValue::String(b(get_self_from_env(env.clone()).get_type(env).name()))
@@ -48,6 +48,27 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                         }),
                         env: env.clone(),
                     }),
+                    gen_get_type()
+                ]), None)
+            }
+        )),
+        ("str".to_string(), RuntimeValue::RuntimeType(
+            RuntimeType::String {
+                env: Env::from(HashMap::from([
+                    gen_get_type()
+                ]), None)
+            }
+        )),
+        ("reg".to_string(), RuntimeValue::RuntimeType(
+            RuntimeType::Regex {
+                env: Env::from(HashMap::from([
+                    gen_get_type()
+                ]), None)
+            }
+        )),
+        ("list".to_string(), RuntimeValue::RuntimeType(
+            RuntimeType::List {
+                env: Env::from(HashMap::from([
                     gen_get_type()
                 ]), None)
             }
