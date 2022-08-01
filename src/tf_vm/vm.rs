@@ -9,6 +9,18 @@ use crate::utils::b;
 
 pub struct VM;
 
+fn get_from_vec(v: &Vec<Box<RuntimeValue>>, value: &RuntimeValue) -> Box<RuntimeValue> {
+    match value {
+        RuntimeValue::Int64(k) => {
+            v[k.clone() as usize].clone()
+        }
+        RuntimeValue::Int128(k) => {
+            v[k.clone() as usize].clone()
+        }
+        _ => panic!("can't get from {v:?}")
+    }
+}
+
 impl VM {
     pub fn new() -> VM {
         VM
@@ -141,15 +153,7 @@ impl VM {
                         let key = self.eval(Arc::clone(&env), vec![key]);
                         match *from {
                             RuntimeValue::List(v) => {
-                                match *key {
-                                    RuntimeValue::Int64(k) => {
-                                        v[k as usize].clone()
-                                    }
-                                    RuntimeValue::Int128(k) => {
-                                        v[k as usize].clone()
-                                    }
-                                    _ => panic!("can't get from {v:?}")
-                                }
+                                get_from_vec(&v, key.as_ref())
                             }
                             _ => panic!("can't get from {from:?}, {key:?}")
                         }
@@ -170,7 +174,16 @@ impl VM {
                                     _ => b(value)
                                 }
                             }
-                            _ => panic!("only can get variable from type {t:?}")
+                            Expr::Value(value) => match *from {
+                                RuntimeValue::List(v) => {
+                                    get_from_vec(
+                                        &v,
+                                        self.eval(Arc::clone(&env), vec![b(Expr::Value(value))]).as_ref()
+                                    )
+                                }
+                                _ => panic!("can't get {value:?} from {from:?}")
+                            }
+                            _ => panic!("only can get variable or value from type {t:?}, not {key:?}")
                         }
                     }
                 }

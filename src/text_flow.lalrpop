@@ -11,8 +11,6 @@ Expr = WithCodePos<Operation>;
 PriorityExpr: Box<Expr> = {
     WithCodePos<Value>,
     WithCodePos<FuncDef>,
-    WithCodePos<FuncCall>,
-    WithCodePos<Get>,
     WithCodePos<List>,
     WithCodePos<Block>,
     WithCodePos<VariableAndControl>,
@@ -35,26 +33,11 @@ WithCodePos<T>: Box<Expr> = {
     <start: @L> <e: T> <end: @R> => b(Expr::ExprWithCodePos{exp: e, start, end})
 }
 
-FuncCall: Box<Expr> = {
-    <f: PriorityExpr> "[" <mut pv: (<Expr> ",")*> <p: Expr?> "]" => {
-        p.map(|x|pv.push(x));
-        b(Expr::FuncCall{func: f, arguments: pv})
-    }
-}
-
 FuncDef: Box<Expr> = {
     "f" "[" <mut pv: (<Identifier> ",")*> <p: Identifier?> "]" <body: Block> => {
         p.map(|x|pv.push(x));
         b(Expr::FuncDef{parameters: pv, body})
     }
-}
-
-Get: Box<Expr> = {
-    <e: PriorityExpr> "." <i: VariableAndControl> => b(Expr::Get{from: e, key: i, is_expr: false}),
-    <e: PriorityExpr> "." <s: Str> => b(Expr::Get{from: e, key: b(Expr::Value(s)), is_expr: false}),
-    <e: PriorityExpr> "." <n: Num64> => b(Expr::Get{from: e, key: b(Expr::Value(n)), is_expr: false}),
-    <e: PriorityExpr> "." <n: Num128> => b(Expr::Get{from: e, key: b(Expr::Value(n)), is_expr: false}),
-    <e: PriorityExpr> "." "(" <t: Term> ")" => b(Expr::Get{from: e, key: t, is_expr: true})
 }
 
 Num64: Value = {
@@ -120,8 +103,21 @@ PPriorityOperation: Box<Expr> = {
 }
 
 PPPriorityOperation: Box<Expr> = {
+     PPPPriorityOperation,
+     <f: PPPPriorityOperation> "[" <mut pv: (<Expr> ",")*> <p: Expr?> "]" => {
+         p.map(|x|pv.push(x));
+         b(Expr::FuncCall{func: f, arguments: pv})
+     },
+     <x: PPPriorityOperation> <op: PPPriorityOp2> <y: WithCodePos<PPPPriorityOperation>> => b(Expr::Op2{op, x, y}),
+}
+
+PPPPriorityOperation: Box<Expr> = {
      Term,
-     <x: PPPriorityOperation> <op: PPPriorityOp2> <y: Term> => b(Expr::Op2{op, x, y}),
+     <t: Term> "." <i: VariableAndControl> => b(Expr::Get{from: t, key: i, is_expr: false}),
+     <t: Term> "." <s: Str> => b(Expr::Get{from: t, key: b(Expr::Value(s)), is_expr: false}),
+     <t: Term> "." <n: Num64> => b(Expr::Get{from: t, key: b(Expr::Value(n)), is_expr: false}),
+     <t: Term> "." <n: Num128> => b(Expr::Get{from: t, key: b(Expr::Value(n)), is_expr: false}),
+     <t: Term> "." "(" <o: Operation> ")" => b(Expr::Get{from: t, key: o, is_expr: true})
 }
 
 Op1: Op = {
