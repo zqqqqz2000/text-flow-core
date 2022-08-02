@@ -69,7 +69,19 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
         ("list".to_string(), RuntimeValue::RuntimeType(
             RuntimeType::List {
                 env: Env::from(HashMap::from([
-                    gen_get_type()
+                    gen_get_type(),
+                    ("len".to_string(), RuntimeValue::FuncDef {
+                        parameters: vec![b("self".to_string())],
+                        body: BuiltinOrExpr::Builtin(
+                            |env| match env.read().unwrap().get("self".to_string()).unwrap() {
+                                RuntimeValue::List(list) => RuntimeValue::Int128(
+                                    list.len() as i128
+                                ),
+                                _ => panic!("only list have len")
+                            }
+                        ),
+                        env: env.clone(),
+                    })
                 ]), None)
             }
         ))
