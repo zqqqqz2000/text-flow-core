@@ -104,7 +104,7 @@ PPriorityOperation: Box<Expr> = {
 
 PPPriorityOperation: Box<Expr> = {
      PPPPriorityOperation,
-     <f: PPPPriorityOperation> "[" <mut pv: (<Expr> ",")*> <p: Expr?> "]" => {
+     <f: PPPriorityOperation> "[" <mut pv: (<Expr> ",")*> <p: Expr?> "]" => {
          p.map(|x|pv.push(x));
          b(Expr::FuncCall{func: f, arguments: pv})
      },
