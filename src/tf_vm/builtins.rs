@@ -84,7 +84,15 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                     })
                 ]), None)
             }
-        ))
+        )),
+        ("obj".to_string(), RuntimeValue::FuncDef {
+            parameters: vec![b("value".to_string())],
+            body: BuiltinOrExpr::Builtin(|env|RuntimeValue::WithEnv {
+                env: Env::new(Some(env.clone())),
+                value: b(env.read().unwrap().get("value".to_string()).unwrap_or(RuntimeValue::None))
+            }),
+            env: env.clone()
+        })
     ]));
     env
 }

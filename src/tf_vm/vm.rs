@@ -1,4 +1,3 @@
-use std::borrow::{Borrow};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use crate::ast::{Value, Op};
@@ -50,20 +49,35 @@ impl VM {
                 Expr::Variable(name) => {
                     let env = Arc::clone(&env);
                     let r_env = env.read().unwrap();
-                    b(r_env.borrow().get(*name.clone()).
+                    b(r_env.get(*name.clone()).
                         unwrap_or_else(|| panic!("can't find variable or token `{name:?}`")))
                 }
                 Expr::Op2 { op, x, y } => match op {
                     Op::Assign => {
                         let y = self.eval(Arc::clone(&env), vec![y]);
                         let env = Arc::clone(&env);
-                        let mut w_env = env.write().unwrap();
                         match *x {
-                            Expr::Variable(name) => w_env.set(*name, *y),
+                            Expr::Variable(name) => env.write().unwrap().set(*name, *y),
                             Expr::ExprWithCodePos { exp, start: _, end: _ } => match *exp {
-                                Expr::Variable(name) => w_env.set(*name, *y),
+                                Expr::Variable(name) => env.write().unwrap().set(*name, *y),
                                 _ => panic!("assign not impl")
                             },
+                            Expr::Get { from, key, is_expr } => {
+                                let from = self.eval(Arc::clone(&env), vec![from]);
+                                if !is_expr {
+                                    match *from {
+                                        RuntimeValue::WithEnv { env, value: _ } => {
+                                            match *key {
+                                                Expr::Variable(variable) => env.write().unwrap().set(*variable, *y),
+                                                _ => panic!("only token can be assign")
+                                            }
+                                        }
+                                        _ => panic!("only object can be assign value")
+                                    }
+                                } else {
+                                    panic!("not implement assign to expr")
+                                }
+                            }
                             _ => panic!("assign not impl")
                         };
                         b(RuntimeValue::None)
@@ -158,36 +172,47 @@ impl VM {
                             _ => panic!("can't get from {from:?}, {key:?}")
                         }
                     } else {
-                        let t = from.get_type(Arc::clone(&env));
-                        match *key {
-                            Expr::Variable(v) => {
-                                let value = t.get_env().read().unwrap().get(*v).unwrap();
-                                match &value {
-                                    RuntimeValue::FuncDef { parameters: _, body: _, env } => b({
-                                        RuntimeValue::WithEnv {
-                                            env: Env::from(HashMap::from([
-                                                ("self".to_string(), *from)
-                                            ]), Some(env.clone())),
-                                            value: b(value),
+                        match *from {
+                            RuntimeValue::WithEnv { env, value: _ } => {
+                                match *key {
+                                    Expr::Variable(variable) => {
+                                        b(env.read().unwrap().get(*variable.clone()).unwrap())
+                                    }
+                                    _ => panic!("can only get token")
+                                }
+                            }
+                            _ => {
+                                let t = from.get_type(Arc::clone(&env));
+                                match *key {
+                                    Expr::Variable(v) => {
+                                        let value = t.get_env().read().unwrap().get(*v).unwrap();
+                                        match &value {
+                                            RuntimeValue::FuncDef { parameters: _, body: _, env } => b({
+                                                RuntimeValue::WithEnv {
+                                                    env: Env::from(HashMap::from([
+                                                        ("self".to_string(), *from)
+                                                    ]), Some(env.clone())),
+                                                    value: b(value),
+                                                }
+                                            }),
+                                            _ => b(value)
                                         }
-                                    }),
-                                    _ => b(value)
+                                    }
+                                    Expr::Value(value) => match *from {
+                                        RuntimeValue::List(v) => {
+                                            get_from_vec(
+                                                &v,
+                                                self.eval(Arc::clone(&env), vec![b(Expr::Value(value))]).as_ref(),
+                                            )
+                                        }
+                                        _ => panic!("can't get {value:?} from {from:?}")
+                                    }
+                                    _ => panic!("only can get variable or value from type {t:?}, not {key:?}")
                                 }
                             }
-                            Expr::Value(value) => match *from {
-                                RuntimeValue::List(v) => {
-                                    get_from_vec(
-                                        &v,
-                                        self.eval(Arc::clone(&env), vec![b(Expr::Value(value))]).as_ref()
-                                    )
-                                }
-                                _ => panic!("can't get {value:?} from {from:?}")
-                            }
-                            _ => panic!("only can get variable or value from type {t:?}, not {key:?}")
                         }
                     }
                 }
-
                 Expr::FuncCall { func, arguments } => {
                     let func_def = self.eval(Arc::clone(&env), vec![func]);
                     let (parameters, func_body, func_env) = match *func_def {
@@ -207,15 +232,18 @@ impl VM {
                         },
                         _ => panic!("can't call {func_def:?}, it's not a function")
                     };
-                    arguments.into_iter().enumerate().for_each(|(i, arguments)| match *self.remove_code_pos(arguments.clone()) {
-                        Expr::Op2 { op, x, y } => match op {
-                            Op::Assign => match *self.remove_code_pos(x) {
-                                Expr::Variable(variable) => func_env.write().unwrap().set(*variable, *self.eval(Arc::clone(&env), vec![y])),
-                                _ => panic!("Assign can't be here")
+                    arguments.into_iter().enumerate().for_each(|(i, arguments)| {
+                        let argument = *self.eval(Arc::clone(&env), vec![arguments.clone()]);
+                        match *self.remove_code_pos(arguments) {
+                            Expr::Op2 { op, x, y } => match op {
+                                Op::Assign => match *self.remove_code_pos(x) {
+                                    Expr::Variable(variable) => func_env.write().unwrap().set(*variable, *self.eval(Arc::clone(&env), vec![y])),
+                                    _ => panic!("Assign can't be here")
+                                },
+                                _ => func_env.write().unwrap().set(*parameters[i].clone(), argument),
                             },
-                            _ => func_env.write().unwrap().set(*parameters[i].clone(), *self.eval(Arc::clone(&env), vec![arguments])),
-                        },
-                        _ => func_env.write().unwrap().set(*parameters[i].clone(), *self.eval(Arc::clone(&env), vec![arguments])),
+                            _ => func_env.write().unwrap().set(*parameters[i].clone(), argument),
+                        }
                     });
                     match func_body {
                         BuiltinOrExpr::Expr(expr) => {
