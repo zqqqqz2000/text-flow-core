@@ -2,22 +2,15 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use crate::{Env};
 use crate::tf_vm::runtimes::{BuiltinOrExpr, RuntimeType, RuntimeValue};
+use crate::tf_vm::utils::{get_name_from_env, get_self_from_env};
 use crate::utils::b;
-
-fn get_from_env(env: Arc<RwLock<Env>>, key: String) -> RuntimeValue {
-    env.read().unwrap().get(key).unwrap()
-}
-
-fn get_self_from_env(env: Arc<RwLock<Env>>) -> RuntimeValue {
-    get_from_env(env, "self".to_string())
-}
 
 pub fn init_builtin() -> Arc<RwLock<Env>> {
     let env = Env::empty();
     let gen_get_type = || ("type".to_string(), RuntimeValue::FuncDef {
         parameters: vec![b("self".to_string())],
         body: BuiltinOrExpr::Builtin(|env| {
-            RuntimeValue::String(b(get_self_from_env(env.clone()).get_type(env).name()))
+            RuntimeValue::String(b(get_self_from_env(env.clone()).unwrap().get_type(env).name()))
         }),
         env: env.clone(),
     });
@@ -27,7 +20,7 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                 env: Env::from(HashMap::from([
                     ("str".to_string(), RuntimeValue::FuncDef {
                         parameters: vec![b("self".to_string())],
-                        body: BuiltinOrExpr::Builtin(|env| match get_self_from_env(env) {
+                        body: BuiltinOrExpr::Builtin(|env| match get_self_from_env(env).unwrap() {
                             RuntimeValue::Int64(i) => RuntimeValue::String(b(i.to_string())),
                             _ => panic!("internal error, should only be i64")
                         }),
@@ -42,7 +35,7 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                 env: Env::from(HashMap::from([
                     ("str".to_string(), RuntimeValue::FuncDef {
                         parameters: vec![b("self".to_string())],
-                        body: BuiltinOrExpr::Builtin(|env| match get_self_from_env(env) {
+                        body: BuiltinOrExpr::Builtin(|env| match get_self_from_env(env).unwrap() {
                             RuntimeValue::Int128(i) => RuntimeValue::String(b(i.to_string())),
                             _ => panic!("internal error, should only be i128")
                         }),
@@ -73,7 +66,7 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                     ("len".to_string(), RuntimeValue::FuncDef {
                         parameters: vec![b("self".to_string())],
                         body: BuiltinOrExpr::Builtin(
-                            |env| match env.read().unwrap().get("self".to_string()).unwrap() {
+                            |env| match get_self_from_env(env).unwrap() {
                                 RuntimeValue::List(list) => RuntimeValue::Int128(
                                     list.len() as i128
                                 ),
@@ -89,7 +82,7 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
             parameters: vec![b("value".to_string())],
             body: BuiltinOrExpr::Builtin(|env|RuntimeValue::WithEnv {
                 env: Env::new(Some(env.clone())),
-                value: b(env.read().unwrap().get("value".to_string()).unwrap_or(RuntimeValue::None))
+                value: b(get_name_from_env(env, "value".to_string()).unwrap_or(RuntimeValue::None))
             }),
             env: env.clone()
         })

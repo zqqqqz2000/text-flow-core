@@ -4,6 +4,7 @@ use crate::ast::{Value, Op};
 use crate::Expr;
 use crate::tf_vm::env::Env;
 use crate::tf_vm::runtimes::{BuiltinOrExpr, RuntimeValue};
+use crate::tf_vm::utils::get_name_from_env;
 use crate::utils::b;
 
 pub struct VM;
@@ -176,7 +177,7 @@ impl VM {
                             RuntimeValue::WithEnv { env, value: _ } => {
                                 match *key {
                                     Expr::Variable(variable) => {
-                                        let scoped_value = env.read().unwrap().get(*variable.clone()).unwrap();
+                                        let scoped_value = get_name_from_env(env.clone(), *variable.clone()).unwrap();
                                         match &scoped_value {
                                             RuntimeValue::FuncDef { parameters: _, body: _, env } => b({
                                                 RuntimeValue::WithEnv {
