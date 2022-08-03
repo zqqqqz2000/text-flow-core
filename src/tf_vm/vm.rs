@@ -172,11 +172,22 @@ impl VM {
                             _ => panic!("can't get from {from:?}, {key:?}")
                         }
                     } else {
-                        match *from {
+                        match from.as_ref() {
                             RuntimeValue::WithEnv { env, value: _ } => {
                                 match *key {
                                     Expr::Variable(variable) => {
-                                        b(env.read().unwrap().get(*variable.clone()).unwrap())
+                                        let scoped_value = env.read().unwrap().get(*variable.clone()).unwrap();
+                                        match &scoped_value {
+                                            RuntimeValue::FuncDef { parameters: _, body: _, env } => b({
+                                                RuntimeValue::WithEnv {
+                                                    env: Env::from(HashMap::from([
+                                                        ("self".to_string(), *from)
+                                                    ]), Some(env.clone())),
+                                                    value: b(scoped_value),
+                                                }
+                                            }),
+                                            _ => b(scoped_value)
+                                        }
                                     }
                                     _ => panic!("can only get token")
                                 }
