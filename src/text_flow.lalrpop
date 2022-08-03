@@ -104,15 +104,15 @@ PPriorityOperation: Box<Expr> = {
 
 PPPriorityOperation: Box<Expr> = {
      PPPPriorityOperation,
-     <f: PPPriorityOperation> "[" <mut pv: (<Expr> ",")*> <p: Expr?> "]" => {
-         p.map(|x|pv.push(x));
-         b(Expr::FuncCall{func: f, arguments: pv})
-     },
      <x: PPPriorityOperation> <op: PPPriorityOp2> <y: WithCodePos<PPPPriorityOperation>> => b(Expr::Op2{op, x, y}),
 }
 
 PPPPriorityOperation: Box<Expr> = {
      Term,
+     <f: PPPPriorityOperation> "[" <mut pv: (<Expr> ",")*> <p: Expr?> "]" => {
+          p.map(|x|pv.push(x));
+          b(Expr::FuncCall{func: f, arguments: pv})
+      },
      <t: PPPPriorityOperation> "." <i: VariableAndControl> => b(Expr::Get{from: t, key: i, is_expr: false}),
      <t: PPPPriorityOperation> "." <s: Str> => b(Expr::Get{from: t, key: b(Expr::Value(s)), is_expr: false}),
      <t: PPPPriorityOperation> "." <n: Num64> => b(Expr::Get{from: t, key: b(Expr::Value(n)), is_expr: false}),
