@@ -14,6 +14,10 @@ pub fn get_name_from_env(env: Arc<RwLock<Env>>, key: String) -> Option<RuntimeVa
     env.read().unwrap().get(key)
 }
 
+pub fn set_name_from_env(env: Arc<RwLock<Env>>, key: String, value: RuntimeValue) {
+    env.write().unwrap().set(key, value)
+}
+
 pub fn get_self_from_env(env: Arc<RwLock<Env>>) -> Option<RuntimeValue> {
     get_name_from_env(env, "self".to_string())
 }

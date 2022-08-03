@@ -113,11 +113,11 @@ PPPriorityOperation: Box<Expr> = {
 
 PPPPriorityOperation: Box<Expr> = {
      Term,
-     <t: Term> "." <i: VariableAndControl> => b(Expr::Get{from: t, key: i, is_expr: false}),
-     <t: Term> "." <s: Str> => b(Expr::Get{from: t, key: b(Expr::Value(s)), is_expr: false}),
-     <t: Term> "." <n: Num64> => b(Expr::Get{from: t, key: b(Expr::Value(n)), is_expr: false}),
-     <t: Term> "." <n: Num128> => b(Expr::Get{from: t, key: b(Expr::Value(n)), is_expr: false}),
-     <t: Term> "." "(" <o: Operation> ")" => b(Expr::Get{from: t, key: o, is_expr: true})
+     <t: PPPPriorityOperation> "." <i: VariableAndControl> => b(Expr::Get{from: t, key: i, is_expr: false}),
+     <t: PPPPriorityOperation> "." <s: Str> => b(Expr::Get{from: t, key: b(Expr::Value(s)), is_expr: false}),
+     <t: PPPPriorityOperation> "." <n: Num64> => b(Expr::Get{from: t, key: b(Expr::Value(n)), is_expr: false}),
+     <t: PPPPriorityOperation> "." <n: Num128> => b(Expr::Get{from: t, key: b(Expr::Value(n)), is_expr: false}),
+     <t: PPPPriorityOperation> "." "(" <o: Operation> ")" => b(Expr::Get{from: t, key: o, is_expr: true})
 }
 
 Op1: Op = {
