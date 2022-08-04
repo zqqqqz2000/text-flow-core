@@ -4,7 +4,7 @@ use crate::ast::{Value, Op};
 use crate::Expr;
 use crate::tf_vm::env::Env;
 use crate::tf_vm::runtimes::{BuiltinOrExpr, RuntimeValue};
-use crate::tf_vm::utils::get_name_from_env;
+use crate::tf_vm::utils::{get_name_from_env, set_name_from_env};
 use crate::utils::b;
 
 pub struct VM;
@@ -63,7 +63,7 @@ impl VM {
                                 Expr::Variable(name) => env.write().unwrap().set(*name, *y),
                                 _ => panic!("assign not impl")
                             },
-                            Expr::Get { from, key, is_expr } => {
+                            Expr::Get { from, key, is_expr, weak: _ } => {
                                 let from = self.eval(Arc::clone(&env), vec![from]);
                                 if !is_expr {
                                     match *from {
@@ -155,6 +155,25 @@ impl VM {
                             _ => panic!("add not impl")
                         }
                     }
+                    Op::Map => {
+                        let mut x = *self.eval(Arc::clone(&env), vec![x]);
+                        let y = *self.eval(Arc::clone(&env), vec![y]);
+                        if let RuntimeValue::WithEnv { value: _, env: _ } = x {} else {
+                            let type_env = x.get_type(env.clone()).get_env();
+                            x = get_name_from_env(type_env, "iter".to_string()).unwrap();
+                        };
+                        let with_env_env = Env::empty();
+                        let with_env = RuntimeValue::WithEnv {
+                            value: b(x),
+                            env: with_env_env.clone(),
+                        };
+                        set_name_from_env(with_env_env.clone(), "next".to_string(), RuntimeValue::FuncDef {
+                            parameters: vec![b("self".to_string())],
+                            body: BuiltinOrExpr::Builtin(|env|RuntimeValue::None), // TODO
+                            env: with_env_env.clone(),
+                        });
+                        b(with_env)
+                    }
                     _ => panic!("2op not impl")
                 },
                 Expr::FuncDef { parameters, body } => b(RuntimeValue::FuncDef {
@@ -162,7 +181,7 @@ impl VM {
                     body: BuiltinOrExpr::Expr(body),
                     env: Env::new(Some(Arc::clone(&env))),
                 }),
-                Expr::Get { from, key, is_expr } => {
+                Expr::Get { from, key, is_expr, weak } => {
                     let from = self.eval(Arc::clone(&env), vec![from]);
                     if is_expr {
                         let key = self.eval(Arc::clone(&env), vec![key]);
@@ -177,7 +196,14 @@ impl VM {
                             RuntimeValue::WithEnv { env, value: _ } => {
                                 match *key {
                                     Expr::Variable(variable) => {
-                                        let scoped_value = get_name_from_env(env.clone(), *variable.clone()).unwrap();
+                                        let scoped_value = get_name_from_env(
+                                            env.clone(), *variable.clone()).unwrap_or_else(|| {
+                                            if weak {
+                                                RuntimeValue::None
+                                            } else {
+                                                panic!("can't get from")
+                                            }
+                                        });
                                         match &scoped_value {
                                             RuntimeValue::FuncDef { parameters: _, body: _, env } => b({
                                                 RuntimeValue::WithEnv {
@@ -197,7 +223,13 @@ impl VM {
                                 let t = from.get_type(Arc::clone(&env));
                                 match *key {
                                     Expr::Variable(v) => {
-                                        let value = t.get_env().read().unwrap().get(*v).unwrap();
+                                        let value = t.get_env().read().unwrap().get(*v).unwrap_or_else(|| {
+                                            if weak {
+                                                RuntimeValue::None
+                                            } else {
+                                                panic!("can't get from")
+                                            }
+                                        });
                                         match &value {
                                             RuntimeValue::FuncDef { parameters: _, body: _, env } => b({
                                                 RuntimeValue::WithEnv {

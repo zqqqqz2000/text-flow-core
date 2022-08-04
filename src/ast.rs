@@ -48,7 +48,7 @@ pub enum Expr {
     // [a, b, c]
     List(Vec<Box<Expr>>),
     // abc.xyz
-    Get { from: Box<Expr>, key: Box<Expr>, is_expr: bool },
+    Get { from: Box<Expr>, key: Box<Expr>, is_expr: bool, weak: bool },
     ExprWithCodePos { exp: Box<Expr>, start: usize, end: usize },
     Block(Vec<Box<Expr>>),
     // !x

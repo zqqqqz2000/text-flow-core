@@ -83,7 +83,6 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                                 if let RuntimeValue::List(_) = self_value {
                                     RuntimeValue::WithEnv {
                                         env: Env::from(HashMap::from([
-                                            ("current".to_string(), RuntimeValue::Int64(0)),
                                             ("next".to_string(), RuntimeValue::FuncDef {
                                                 parameters: vec![b("self".to_string())],
                                                 body: BuiltinOrExpr::Builtin(
