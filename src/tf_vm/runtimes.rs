@@ -17,6 +17,7 @@ pub enum RuntimeValue {
     String(Box<String>),
     Regex(Box<String>),
     List(Vec<Box<RuntimeValue>>),
+    EOF,
     None,
     FuncDef {
         parameters: Vec<Box<String>>,
@@ -98,6 +99,7 @@ fn get_value_type_name(t: &RuntimeValue) -> String {
         String(_) => "str".to_string(),
         Regex(_) => "reg".to_string(),
         List(_) => "list".to_string(),
+        EOF => "EOF".to_string(),
         FuncDef { parameters: _, body: _, env: _ } => "fun".to_string(),
         None => "none".to_string(),
         RuntimeType(t) => t.name(),
@@ -126,7 +128,8 @@ impl RuntimeValue {
             RuntimeValue::None => RuntimeType::None { env: type_env },
             RuntimeValue::FuncDef { parameters: _, body: _, env: _ } => RuntimeType::FuncDef { env: type_env },
             RuntimeValue::RuntimeType(r) => r.clone(),
-            RuntimeValue::WithEnv {env: _, value} => value.get_type(env)
+            RuntimeValue::WithEnv {env: _, value} => value.get_type(env),
+            RuntimeValue::EOF => panic!("EOF have no runtime")
         }
     }
 }

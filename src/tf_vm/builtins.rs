@@ -92,7 +92,11 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                                                             if let RuntimeValue::Int64(current) = get_name_from_env(env.clone(), "current".to_string()).unwrap_or(RuntimeValue::Int64(0)) {
                                                                 if let RuntimeValue::List(list) = *value {
                                                                     set_name_from_env(env, "current".to_string(), RuntimeValue::Int64(current + 1));
-                                                                    *list[current as usize].clone()
+                                                                    if (current as usize) < list.len() {
+                                                                        *list[current as usize].clone()
+                                                                    } else {
+                                                                        RuntimeValue::EOF
+                                                                    }
                                                                 } else {
                                                                     panic!("must be list")
                                                                 }
@@ -110,7 +114,7 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                                         value: b(self_value),
                                     }
                                 } else {
-                                    panic!("only list can")
+                                    panic!("only list can, not {self_value:?}")
                                 }
                             },
                         ),

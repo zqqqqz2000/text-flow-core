@@ -32,6 +32,52 @@ impl VM {
             _ => expr,
         }
     }
+    pub fn runtime_func_call(
+        &self,
+        runtime_func_def: Box<RuntimeValue>,
+        arguments: Vec<Box<Expr>>,
+        external_variables: HashMap<String, RuntimeValue>,
+    ) -> Box<RuntimeValue> {
+        let (parameters, func_body, func_env) = match *runtime_func_def {
+            RuntimeValue::FuncDef {
+                parameters,
+                body,
+                env
+            } => (parameters, body, env),
+            RuntimeValue::WithEnv {
+                value,
+                env: sub_env
+            } => match *value {
+                RuntimeValue::FuncDef { parameters, body, env: _ } => {
+                    (parameters, body, sub_env)
+                }
+                _ => panic!("can't call {value:?}, it's not a function")
+            },
+            _ => panic!("can't call {runtime_func_def:?}, it's not a function")
+        };
+        let func_run_env = Env::from(external_variables, Some(func_env));
+        arguments.into_iter().enumerate().for_each(|(i, arguments)| {
+            let argument = *self.eval(func_run_env.clone(), vec![arguments.clone()]);
+            match *self.remove_code_pos(arguments) {
+                Expr::Op2 { op, x, y } => match op {
+                    Op::Assign => match *self.remove_code_pos(x) {
+                        Expr::Variable(variable) => func_run_env.write().unwrap().set(*variable, *self.eval(func_run_env.clone(), vec![y])),
+                        _ => panic!("Assign can't be here")
+                    },
+                    _ => func_run_env.write().unwrap().set(*parameters[i].clone(), argument),
+                },
+                _ => func_run_env.write().unwrap().set(*parameters[i].clone(), argument),
+            }
+        });
+        match func_body {
+            BuiltinOrExpr::Expr(expr) => {
+                self.eval(func_run_env, vec![expr])
+            }
+            BuiltinOrExpr::Builtin(builtin) => {
+                b(builtin(func_run_env))
+            }
+        }
+    }
     pub fn eval(&self, env: Arc<RwLock<Env>>, asts: Vec<Box<Expr>>) -> Box<RuntimeValue> {
         let mut last = b(RuntimeValue::None);
         for ast in asts {
@@ -158,21 +204,20 @@ impl VM {
                     Op::Map => {
                         let mut x = *self.eval(Arc::clone(&env), vec![x]);
                         let y = *self.eval(Arc::clone(&env), vec![y]);
-                        if let RuntimeValue::WithEnv { value: _, env: _ } = x {} else {
+                        let next_arguments;
+                        let iter;
+                        if let RuntimeValue::WithEnv { value, env } = x {
+                            iter = get_name_from_env(
+                                env,
+                                "iter".to_string(),
+                            ).unwrap();
+                            next_arguments = HashMap::from([("self".to_string(), *value)]);
+                        } else {
                             let type_env = x.get_type(env.clone()).get_env();
-                            x = get_name_from_env(type_env, "iter".to_string()).unwrap();
+                            iter = get_name_from_env(type_env, "iter".to_string()).unwrap();
+                            next_arguments = HashMap::from([("self".to_string(), x.clone())]);
                         };
-                        let with_env_env = Env::empty();
-                        let with_env = RuntimeValue::WithEnv {
-                            value: b(x),
-                            env: with_env_env.clone(),
-                        };
-                        set_name_from_env(with_env_env.clone(), "next".to_string(), RuntimeValue::FuncDef {
-                            parameters: vec![b("self".to_string())],
-                            body: BuiltinOrExpr::Builtin(|env|RuntimeValue::None), // TODO
-                            env: with_env_env.clone(),
-                        });
-                        b(with_env)
+                        self.runtime_func_call(b(iter), vec![], next_arguments)
                     }
                     _ => panic!("2op not impl")
                 },
@@ -259,44 +304,7 @@ impl VM {
                 }
                 Expr::FuncCall { func, arguments } => {
                     let func_def = self.eval(Arc::clone(&env), vec![func]);
-                    let (parameters, func_body, func_env) = match *func_def {
-                        RuntimeValue::FuncDef {
-                            parameters,
-                            body,
-                            env
-                        } => (parameters, body, env),
-                        RuntimeValue::WithEnv {
-                            value,
-                            env: sub_env
-                        } => match *value {
-                            RuntimeValue::FuncDef { parameters, body, env: _ } => {
-                                (parameters, body, sub_env)
-                            }
-                            _ => panic!("can't call {value:?}, it's not a function")
-                        },
-                        _ => panic!("can't call {func_def:?}, it's not a function")
-                    };
-                    arguments.into_iter().enumerate().for_each(|(i, arguments)| {
-                        let argument = *self.eval(Arc::clone(&env), vec![arguments.clone()]);
-                        match *self.remove_code_pos(arguments) {
-                            Expr::Op2 { op, x, y } => match op {
-                                Op::Assign => match *self.remove_code_pos(x) {
-                                    Expr::Variable(variable) => func_env.write().unwrap().set(*variable, *self.eval(Arc::clone(&env), vec![y])),
-                                    _ => panic!("Assign can't be here")
-                                },
-                                _ => func_env.write().unwrap().set(*parameters[i].clone(), argument),
-                            },
-                            _ => func_env.write().unwrap().set(*parameters[i].clone(), argument),
-                        }
-                    });
-                    match func_body {
-                        BuiltinOrExpr::Expr(expr) => {
-                            self.eval(func_env, vec![expr])
-                        }
-                        BuiltinOrExpr::Builtin(builtin) => {
-                            b(builtin(func_env))
-                        }
-                    }
+                    self.runtime_func_call(func_def, arguments, HashMap::new())
                 }
                 _ => panic!("{ast:?} not impl")
             }
