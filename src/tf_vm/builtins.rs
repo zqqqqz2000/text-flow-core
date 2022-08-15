@@ -89,7 +89,7 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
                                                     |env| {
                                                         let self_value = get_self_from_env(env.clone()).unwrap();
                                                         if let RuntimeValue::WithEnv { env, value } = self_value {
-                                                            if let RuntimeValue::Int64(current) = get_name_from_env(env.clone(), "current".to_string()).unwrap() {
+                                                            if let RuntimeValue::Int64(current) = get_name_from_env(env.clone(), "current".to_string()).unwrap_or(RuntimeValue::Int64(0)) {
                                                                 if let RuntimeValue::List(list) = *value {
                                                                     set_name_from_env(env, "current".to_string(), RuntimeValue::Int64(current + 1));
                                                                     *list[current as usize].clone()
