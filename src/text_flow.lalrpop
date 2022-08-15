@@ -153,7 +153,7 @@ PPriorityOp2: Op = {
     "-" => Op::Sub,
     "-<" => Op::Map,
     ">-" => Op::Collect,
-    ">>-" => Op::AsyncMap
+    "-<<" => Op::AsyncMap
 }
 
 PPPriorityOp2: Op = {
