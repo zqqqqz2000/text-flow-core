@@ -295,12 +295,18 @@ pub fn eval(env: Arc<RwLock<Env>>, asts: Vec<Box<Expr>>) -> Box<RuntimeValue> {
                                 parameters: vec![b("self".to_string())],
                                 body: BuiltinOrExpr::Builtin(|env| {
                                     let iter = get_name_from_env(env.clone(), "iter".to_string()).unwrap();
-                                    let next_func = runtime_get(env, false, b(iter), b(Expr::Variable(b("next".to_string()))), false);
+                                    let func = get_name_from_env(env.clone(), "func".to_string()).unwrap();
+                                    let next_func = runtime_get(env.clone(), false, b(iter), b(Expr::Variable(b("next".to_string()))), false);
                                     let value = runtime_func_call(next_func, vec![], HashMap::new());
-                                    *value
+                                    *runtime_func_call(
+                                        b(func),
+                                        Vec::new(),
+                                        HashMap::from([("i".to_string(), *value)]),
+                                    )
                                 }),
                                 env: Env::from(HashMap::from([
-                                    ("iter".to_string(), iter)
+                                    ("iter".to_string(), iter),
+                                    ("func".to_string(), *eval(env.clone(), Vec::from([y])))
                                 ]),None),
                             })
                         ]), Some(env.clone())),
