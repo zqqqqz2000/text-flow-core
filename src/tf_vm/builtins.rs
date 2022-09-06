@@ -15,6 +15,11 @@ pub fn init_builtin() -> Arc<RwLock<Env>> {
         env: env.clone(),
     });
     env.write().unwrap().update_variables(HashMap::from([
+        ("fun".to_string(), RuntimeValue::RuntimeType(
+            RuntimeType::FuncDef {
+                env: Env::empty(),
+            }
+        )),
         ("i64".to_string(), RuntimeValue::RuntimeType(
             RuntimeType::Int64 {
                 env: Env::from(HashMap::from([
